@@ -10,7 +10,9 @@ The system is divided into three specialized microservices that maintain a decou
 
 * **Booking Service:** Orchestrates the reservation lifecycle and manages user-facing booking states.
 * **Inventory Service:** The source of truth for seat availability, utilizing optimized persistence logic to handle extreme load.
-* **Order Service:** Simulates payment orchestration via internal state transitions. It mimics the financial approval/rejection flow to drive the Saga's success or compensation paths without requiring a third-party payment gateway.
+* **Order Service:** Simulates payment orchestration via internal state transitions. It mimics the financial approval/rejection flow to drive the Saga's success or failure paths without requiring a third-party payment gateway.
+
+![Distributed Microservices Architecture](system_architecture.gif)
 
 ---
 
@@ -52,7 +54,7 @@ The entire ecosystem is fully **Dockerized**. Using **Docker Compose**, the comp
 ### Installation & Deployment
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/shruti910/Distributed-Ticket-Booking-System.git](https://github.com/shruti910/Distributed-Ticket-Booking-System.git)
+    git clone https://github.com/shruti910/Distributed-Ticket-Booking-System.git
     ```
 2.  **Spin Up Infrastructure:**
     Use the provided Docker Compose file to start Kafka, Zookeeper, and the databases:
