@@ -21,11 +21,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build Booking Service
-        run: mvn -pl booking-service clean package -DskipTests
-
-      - name: Build Inventory Service
-        run: mvn -pl inventory-service clean package -DskipTests
-
-      - name: Build Order Service
-        run: mvn -pl order-service clean package -DskipTests
+      - name: Build All Services
+        working-directory: "./Ticket Reservation System"
+        run: mvn clean package -DskipTests
