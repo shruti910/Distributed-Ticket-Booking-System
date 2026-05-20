@@ -3,6 +3,7 @@ package com.tech.ticketbolt.bookingservice.service;
 
 import com.tech.ticketbolt.bookingservice.client.InventoryManagementServiceClient;
 import com.tech.ticketbolt.bookingservice.event.BookingEvent;
+import com.tech.ticketbolt.bookingservice.event.InventoryReclaimEvent;
 import com.tech.ticketbolt.bookingservice.model.Booking;
 import com.tech.ticketbolt.bookingservice.model.Customer;
 import com.tech.ticketbolt.bookingservice.repository.BookingRepository;
@@ -16,8 +17,10 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -28,20 +31,24 @@ import java.util.UUID;
 public class BookingService {
     private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
 
+    private final BookingService self;
     private final CustomerRepository customerRepository;
     private final BookingRepository bookingRepository;
     private final InventoryManagementServiceClient inventoryServiceClient;
     private final KafkaTemplate<String, BookingEvent> kafkaTemplate;
+    private final KafkaTemplate<String, InventoryReclaimEvent> kafkaTemplateInventory;
 
     @Autowired
-    public BookingService(CustomerRepository customerRepository, BookingRepository bookingRepository, InventoryManagementServiceClient inventoryServiceClient, KafkaTemplate<String, BookingEvent> kafkaTemplate) {
+    public BookingService(@Lazy BookingService self, CustomerRepository customerRepository, BookingRepository bookingRepository, InventoryManagementServiceClient inventoryServiceClient, KafkaTemplate<String, BookingEvent> kafkaTemplate, KafkaTemplate<String, InventoryReclaimEvent> kafkaTemplateInventory) {
+        this.self = self;
         this.customerRepository = customerRepository;
         this.bookingRepository = bookingRepository;
         this.inventoryServiceClient = inventoryServiceClient;
         this.kafkaTemplate = kafkaTemplate;
+        this.kafkaTemplateInventory = kafkaTemplateInventory;
     }
 
-    @Transactional
+
     public BookingResponse createBooking(@NonNull BookingRequest bookingRequest) {
         logger.debug("Booking Order Requested: {}", bookingRequest);
         // find if customer exists
@@ -52,8 +59,9 @@ public class BookingService {
         EventResponse inventoryEventResponse = inventoryServiceClient.reserveSeats(bookingRequest, uniqueBookingId);
         logger.info("Response from Inventory Service:{}", inventoryEventResponse.toString());
         if (inventoryEventResponse.responseCode().equals(EventResponseCode.SUCCESS)) {
-            return createPendingBookingReservation(bookingRequest, customer, inventoryEventResponse);
-        } else if (inventoryEventResponse.responseCode().equals(EventResponseCode.SOLD_OUT)) {
+            return self.createPendingBookingReservation(bookingRequest, customer, inventoryEventResponse);
+        }
+        else if (inventoryEventResponse.responseCode().equals(EventResponseCode.SOLD_OUT)) {
             logger.info("Sorry, tickets sold out while you were looking!");
             return new BookingResponse(
                     uniqueBookingId,
@@ -64,9 +72,7 @@ public class BookingService {
                     null,
                     "Sorry, tickets sold out while you were looking!"
             );
-        } else if (inventoryEventResponse.responseCode().equals(EventResponseCode.EVENT_NOT_FOUND)
-                || inventoryEventResponse.responseCode().equals(EventResponseCode.VENUE_NOT_FOUND)
-                || inventoryEventResponse.responseCode().equals(EventResponseCode.ERROR)) {
+        }
             return new BookingResponse(
                     uniqueBookingId,
                     customer.getId(),
@@ -76,12 +82,10 @@ public class BookingService {
                     null,
                     "ERROR! Sorry for the inconvenience"
             );
-        }
-        return null;
     }
 
     @Transactional
-    private BookingResponse createPendingBookingReservation(@NonNull BookingRequest bookingRequest, Customer customer, EventResponse inventoryEventResponse) {
+    public BookingResponse createPendingBookingReservation(@NonNull BookingRequest bookingRequest, Customer customer, EventResponse inventoryEventResponse) {
 
         //calculate total price of tickets
         BigDecimal totalPrice = BigDecimal.valueOf(bookingRequest.ticketCount())
@@ -124,6 +128,22 @@ public class BookingService {
                 "Seats reserved..Order Pending..."
         );
 
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void expireAndNotifyBooking(Booking booking) {
+        booking.setStatus(BookingStatus.EXPIRED);
+        bookingRepository.save(booking);
+
+        // Send event to Kafka so the Inventory Service can increment capacity
+        InventoryReclaimEvent reclaimEvent = new InventoryReclaimEvent(
+                booking.getBookingId(),
+                booking.getEventId(),
+                booking.getQuantity()
+        );
+        kafkaTemplateInventory.send("inventory-reclaim-topic", reclaimEvent);
+        logger.info("Successfully expired booking {} and published Kafka reclaim event for event {}.",
+                booking.getBookingId(), booking.getEventId());
     }
 
 }
