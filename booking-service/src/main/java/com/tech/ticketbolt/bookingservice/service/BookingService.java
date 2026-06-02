@@ -73,14 +73,16 @@ public class BookingService {
                     "Sorry, tickets sold out while you were looking!"
             );
         }
+
+        Long venueId = (inventoryEventResponse.venue() != null) ? inventoryEventResponse.venue().id() : null;
             return new BookingResponse(
                     uniqueBookingId,
                     customer.getId(),
                     inventoryEventResponse.eventId(),
-                    inventoryEventResponse.venue().id(),
+                    venueId,
                     bookingRequest.ticketCount(),
                     null,
-                    "ERROR! Sorry for the inconvenience"
+                    "Error: "+inventoryEventResponse.message()
             );
     }
 

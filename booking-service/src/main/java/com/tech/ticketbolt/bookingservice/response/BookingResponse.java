@@ -14,8 +14,6 @@ public record BookingResponse(
 
     public BookingResponse {
         Objects.requireNonNull(bookingId, "Booking ID must not be null");
-        Objects.requireNonNull(customerId, "Customer ID must not be null");
-        Objects.requireNonNull(eventId, "Event ID must not be null");
     }
 
 
