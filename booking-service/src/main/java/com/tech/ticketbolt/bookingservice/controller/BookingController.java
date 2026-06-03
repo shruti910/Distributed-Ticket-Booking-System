@@ -44,13 +44,11 @@ public class BookingController {
             return ResponseEntity.ok().body(response);
         }catch (ResourceAccessException e) {
             logger.debug(e.getMessage());
-            BookingResponse response =  new BookingResponse(null,bookingRequest.userId(),bookingRequest.eventId(),null,bookingRequest.ticketCount(),null,e.getMessage());
-            return ResponseEntity.status(503).body(response);
+            return ResponseEntity.status(503).body(e.getMessage());
         }
         catch (RuntimeException e) {
             logger.debug(e.getMessage());
-            BookingResponse response =  new BookingResponse(null,bookingRequest.userId(),bookingRequest.eventId(),null,bookingRequest.ticketCount(),null,e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(e.getMessage());
 
         }
     }
