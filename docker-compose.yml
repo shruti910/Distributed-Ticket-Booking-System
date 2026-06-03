@@ -126,10 +126,11 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - JAVA_TOOL_OPTIONS=-Dspring.profiles.active=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://booking-db:3306/BOOKING_MANAGEMENT?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
-      - INVENTORY_SERVICE_URL=http://ticketbolt-inventory-ms:8080/inventory-ms/api/v1/inventory/reserve
+      - INVENTORY_SERVICE_URL=http://inventory-service:8080/inventory-ms/api/v1/inventory/reserve
 
   inventory-service:
     build:
@@ -144,8 +145,9 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - JAVA_TOOL_OPTIONS=-Dspring.profiles.active=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://inventory-db:3306/INVENTORY_MANAGEMENT?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
 
   order-service:
@@ -161,9 +163,11 @@ services:
       kafka-broker:
         condition: service_healthy
     environment:
-      - JAVA_TOOL_OPTIONS=-Dspring.profiles.active=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://order-db:3306/ORDER_MANAGEMENT?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka-broker:29092
+      - ORDER_PAYMENT_STATUS=confirmed
 
 volumes:
   booking-db-data:
