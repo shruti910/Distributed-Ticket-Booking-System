@@ -1,6 +1,6 @@
 # High-Concurrency Distributed Ticket Reservation System
 
-A robust, distributed microservices ecosystem designed to handle high-traffic ticket sales with absolute data integrity. This project demonstrates advanced architectural patterns for managing distributed transactions and high-concurrency race conditions using a modern, containerized stack.
+A robust, distributed microservices ecosystem designed to handle high-traffic ticket sales with data integrity. This project demonstrates advanced architectural patterns for managing distributed transactions and high-concurrency race conditions using a modern, containerized stack.
 
 ---
 
@@ -27,9 +27,8 @@ Engineered for stability during massive traffic spikes. The system employs threa
 ### Containerization & Orchestration
 The entire ecosystem is fully **Dockerized**. Using **Docker Compose**, the complex web of microservices, multiple databases, and the Kafka broker can be orchestrated with a single command, ensuring a consistent environment from development to production.
 
-### Performance-Validated
-* **Throughput:** Verified at ~325 requests per second on Apple M4 hardware.
-* **Reliability:** Successfully processed 39,000+ simultaneous transaction/compensation loops during stress testing with zero data corruption.
+### Environment-Agnostic Configuration
+The architecture completely separates configuration from code. Microservices are built into immutable Docker images. Operational details (such as database URLs, credentials, and network endpoints) are injected entirely at runtime.
 
 ---
 
@@ -48,28 +47,26 @@ The entire ecosystem is fully **Dockerized**. Using **Docker Compose**, the comp
 
 ### Prerequisites
 * Docker Desktop
-* JDK 21
-* Maven 3.9+
+* or Docker Engine
 
 ### Installation & Deployment
 1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/shruti910/Distributed-Ticket-Booking-System.git
+    cd Distributed-Ticket-Booking-System
     ```
 2.  **Spin Up Infrastructure:**
     Use the provided Docker Compose file to start Kafka, Zookeeper, and the databases:
     ```bash
-    docker-compose up -d
+    docker-compose up  --build -d
     ```
-3.  **Run the Services:**
-    Navigate to each service directory and launch via Maven:
-    ```bash
-    ./mvnw spring-boot:run
-    ```
+3. **Accessing the Infrastructure:**
 
+    * Booking Service API: http://localhost:8081/booking-ms
+    * Inventory Service API: http://localhost:8080/inventory-ms
+    * Order Service API: http://localhost:8082/order-ms
+    * Kafka UI Dashboard: http://localhost:8084
 ---
 
 ## Future Roadmap
-- [ ] **Automated Reclaim:** Implementation of a scheduled background task to unlock expired (unpaid) reservations.
-- [ ] **Financial Integration:** Transition from simulated payment states to a live Payment Gateway (e.g., Stripe/Braintree).
-- [ ] **Observability:** Integration of distributed tracing for cross-service request monitoring.
+- [ ] **Observability:** Integration of distributed tracing for cross-service request monitoring
